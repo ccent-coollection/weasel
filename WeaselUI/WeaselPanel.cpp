@@ -1,4 +1,5 @@
 #include "WeaselPanel.h"
+#include "acrylic.h"
 #include "FullScreenLayout.h"
 #include "HorizontalLayout.h"
 #include "VHorizontalLayout.h"
@@ -378,6 +379,7 @@ BOOL WeaselPanel::Create(HWND parent, bool preview_mode) {
       ex_style, L"WeaselPanel", L"WeaselPanel", WS_POPUP | WS_CLIPSIBLINGS,
       CW_USEDEFAULT, CW_USEDEFAULT, 10, 10, parent, nullptr, hInstance, this);
   if (m_hWnd) {
+    acrylic::Apply(m_hWnd, m_style.back_color);
     if (!m_pD2D) {
       DEBUG << "m_style.font_face: " << m_style.font_face;
       m_pD2D = std::make_shared<D2D>(m_style);
