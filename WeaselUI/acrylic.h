@@ -77,9 +77,11 @@ inline void ClipRounded(HWND hwnd, int radius) {
   int r = radius < limit ? radius : limit;
   if (r < 0)
     r = 0;
-  HRGN region = r > 0 ? ::CreateRoundRectRgn(0, 0, width + 1, height + 1, r * 2,
-                                             r * 2)
-                      : ::CreateRectRgn(0, 0, width + 1, height + 1);
+  HRGN region = nullptr;
+  if (r > 0)
+    region = ::CreateRoundRectRgn(0, 0, width + 1, height + 1, r * 2, r * 2);
+  else
+    region = ::CreateRectRgn(0, 0, width + 1, height + 1);
   if (!region)
     return;
   // SetWindowRgn takes ownership of the region on success, and leaves it to
