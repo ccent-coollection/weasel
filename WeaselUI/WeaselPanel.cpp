@@ -244,6 +244,13 @@ void WeaselPanel::_ResizeWindow() {
 }
 
 void WeaselPanel::_CreateLayout() {
+  if (acrylic::IsEnabled(m_style.back_color)) {
+    // The blurred backdrop covers the whole window, so the layout must not
+    // reserve its self-drawn shadow margin: shrink the window onto the bar.
+    m_style.shadow_radius = 0;
+    m_style.shadow_offset_x = 0;
+    m_style.shadow_offset_y = 0;
+  }
   the<Layout> layout;
   if (m_style.layout_type == UIStyle::LAYOUT_VERTICAL_TEXT ||
       m_style.layout_type == UIStyle::LAYOUT_VERTICAL_TEXT_FULLSCREEN) {
