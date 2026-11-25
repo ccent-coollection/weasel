@@ -239,6 +239,10 @@ void WeaselPanel::_ResizeWindow() {
   SetWindowPos(m_hWnd, 0, 0, 0, size.cx, size.cy,
                SWP_NOACTIVATE | SWP_NOMOVE | SWP_NOZORDER | SWP_NOREDRAW);
   m_pD2D->OnResize(size.cx, size.cy);
+  // The accent covers the whole window, so it has to be re-applied after
+  // every resize, and the window clipped to the bar's rounded corners.
+  acrylic::ClipRounded(m_hWnd, DPI_SCALE(m_style.round_corner_ex));
+  acrylic::Apply(m_hWnd, m_style.back_color);
   m_lastWindowWidth = size.cx;
   m_lastWindowHeight = size.cy;
 }

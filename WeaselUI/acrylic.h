@@ -12,11 +12,11 @@
 //   * the accent covers the whole window, so the window must be exactly the
 //     painted candidate bar; the layout's shadow margin is therefore flattened
 //     by WeaselPanel::_CreateLayout when the backdrop is enabled;
-//   * the accent itself is rectangular, so the window asks DWM for rounded
-//     corners, which clips the blur to the shape of the bar.
+//   * the accent is rectangular and ignores the window's rounded corners, so
+//     the window is clipped to the bar's rounded rect instead, which makes the
+//     blur follow the same shape as the painted background.
 //
-// Both entry points are resolved at run time: SetWindowCompositionAttribute is
-// undocumented, and dwmapi.dll is not part of weasel's link line.
+// SetWindowCompositionAttribute is undocumented, so it is resolved at run time.
 
 #include <windows.h>
 
@@ -59,19 +59,33 @@ inline void Apply(HWND hwnd, int back_color) {
   WindowCompositionAttribData data = {kAccentPolicyAttribute, &policy,
                                       sizeof(policy)};
   set_window_composition_attribute(hwnd, &data);
+}
 
-  // Clip the rectangular accent to a rounded window so the blur never shows
-  // outside the candidate bar.
-  enum { kWindowCornerPreference = 33, kRoundSmall = 3 };
-  using DwmSetWindowAttributeFn = HRESULT(WINAPI*)(HWND, DWORD, LPCVOID, DWORD);
-  static const auto set_window_attribute =
-      reinterpret_cast<DwmSetWindowAttributeFn>(::GetProcAddress(
-          ::LoadLibraryW(L"dwmapi.dll"), "DwmSetWindowAttribute"));
-  if (set_window_attribute) {
-    int preference = kRoundSmall;
-    set_window_attribute(hwnd, kWindowCornerPreference, &preference,
-                         sizeof(preference));
-  }
+// The accent is rectangular, so without this the blur keeps square corners
+// behind the rounded bar and the two shapes visibly disagree.
+inline void ClipRounded(HWND hwnd, int radius) {
+  if (!hwnd)
+    return;
+  RECT rc{};
+  if (!::GetClientRect(hwnd, &rc))
+    return;
+  const int width = rc.right - rc.left;
+  const int height = rc.bottom - rc.top;
+  if (width <= 0 || height <= 0)
+    return;
+  const int limit = (width < height ? width : height) / 2;
+  int r = radius < limit ? radius : limit;
+  if (r < 0)
+    r = 0;
+  HRGN region = r > 0 ? ::CreateRoundRectRgn(0, 0, width + 1, height + 1, r * 2,
+                                             r * 2)
+                      : ::CreateRectRgn(0, 0, width + 1, height + 1);
+  if (!region)
+    return;
+  // SetWindowRgn takes ownership of the region on success, and leaves it to
+  // the caller on failure.
+  if (::SetWindowRgn(hwnd, region, TRUE) == 0)
+    ::DeleteObject(region);
 }
 
 }  // namespace acrylic
